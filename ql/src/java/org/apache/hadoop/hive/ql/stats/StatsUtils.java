@@ -364,7 +364,7 @@ public class StatsUtils {
         // skip the step to connect to the metastore.
         if (fetchColStats && !neededColsToRetrieve.isEmpty() && !partNames.isEmpty()) {
           aggrStats = Hive.get().getAggrColStatsFor(table.getDbName(), table.getTableName(),
-              neededColsToRetrieve, partNames, false);
+              neededColsToRetrieve, partNames, false, getNumRows(table), stats.getNumRows());
         }
 
         boolean statsRetrieved = aggrStats != null &&
