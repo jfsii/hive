@@ -37,7 +37,9 @@ import org.apache.hadoop.hive.serde2.SerDeSpec;
 import org.apache.hadoop.hive.serde2.io.ParquetHiveRecord;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.typeinfo.MapTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.StructTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
@@ -91,9 +93,40 @@ public class ParquetHiveSerDe extends AbstractSerDe implements SchemaInference {
 
   private ObjectInspector objInspector;
   private ParquetHiveRecord parquetRow;
+  private ObjectInspectorConverters.Converter converter;
 
   public ParquetHiveSerDe() {
     parquetRow = new ParquetHiveRecord();
+  }
+
+  // Recursively check if CHAR or VARCHAR types are used
+  private boolean needsConversion(TypeInfo type) {
+    if (type.getTypeName().toLowerCase().startsWith(serdeConstants.CHAR_TYPE_NAME) ||
+        type.getTypeName().toLowerCase().startsWith(serdeConstants.VARCHAR_TYPE_NAME)) {
+      return true;
+    }
+
+    if (type.getCategory().equals(Category.STRUCT)) {
+      StructTypeInfo sti = (StructTypeInfo) type;
+      for (TypeInfo t : sti.getAllStructFieldTypeInfos()) {
+        if (needsConversion(t)) {
+          return true;
+        }
+      }
+    }
+
+    if (type.getCategory().equals(Category.MAP)) {
+      TypeInfo keyTypeInfo = ((MapTypeInfo) type).getMapKeyTypeInfo();
+      if (needsConversion(keyTypeInfo)) {
+        return true;
+      }
+      TypeInfo valueTypeInfo = ((MapTypeInfo) type).getMapKeyTypeInfo();
+      if (needsConversion(valueTypeInfo)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   @Override
@@ -113,12 +146,24 @@ public class ParquetHiveSerDe extends AbstractSerDe implements SchemaInference {
         prunedTypeInfo = pruneFromPaths(completeTypeInfo, prunedColumnPaths);
       }
     }
-    this.objInspector = new ArrayWritableObjectInspector(completeTypeInfo, prunedTypeInfo);
+    this.objInspector = new ArrayWritableObjectInspector(completeTypeInfo, prunedTypeInfo, false);
+    if (needsConversion(completeTypeInfo)) {
+      LOG.info("Using converter for PARQUET types");
+      // This inspector forces all string types (CHAR/VARCHAR/STRING) to be STRING. This is used for conversion purposes
+      // on deserialization. The Parquet reader will return STRINGs for CHAR/VARCHAR/STRING but there are spots in the
+      // code where the returned row values need to match the exact string types (For example in GenericUDFIn the IN set
+      // expects the types to match or else we get incorrect results).
+      ObjectInspector stringInspector  = new ArrayWritableObjectInspector(completeTypeInfo, prunedTypeInfo, true);
+      this.converter = ObjectInspectorConverters.getConverter(stringInspector, objInspector);
+    }
   }
 
   @Override
   public Object deserialize(final Writable blob) throws SerDeException {
     if (blob instanceof ArrayWritable) {
+      if (converter != null) {
+        return converter.convert(blob);
+      }
       return blob;
     } else {
       return null;
@@ -143,7 +188,7 @@ public class ParquetHiveSerDe extends AbstractSerDe implements SchemaInference {
     }
 
     parquetRow.value = obj;
-    parquetRow.inspector= (StructObjectInspector)objInspector;
+    parquetRow.inspector= (StructObjectInspector) objInspector;
     return parquetRow;
   }
 

@@ -47,6 +47,7 @@ public class ArrayWritableObjectInspector extends SettableStructObjectInspector 
   private final List<String> fieldNames;
   private final List<StructField> fields;
   private final HashMap<String, StructFieldImpl> fieldsByName;
+  private boolean allStrings = false;
 
   // Whether this OI is for the column-level schema (as opposed to nested column fields).
   private final boolean isRoot;
@@ -59,9 +60,19 @@ public class ArrayWritableObjectInspector extends SettableStructObjectInspector 
     this(true, originalTypeInfo, prunedTypeInfo);
   }
 
+  public ArrayWritableObjectInspector(StructTypeInfo originalTypeInfo, StructTypeInfo prunedTypeInfo,
+                                      boolean allStrings) {
+    this(true, originalTypeInfo, prunedTypeInfo, allStrings);
+  }
+
   public ArrayWritableObjectInspector(boolean isRoot,
       StructTypeInfo originalTypeInfo, StructTypeInfo prunedTypeInfo) {
+    this(true, originalTypeInfo, prunedTypeInfo, false);
+  }
+  public ArrayWritableObjectInspector(boolean isRoot, StructTypeInfo originalTypeInfo,
+                                      StructTypeInfo prunedTypeInfo, boolean allStrings) {
     this.isRoot = isRoot;
+    this.allStrings = allStrings;
     typeInfo = originalTypeInfo;
     fieldNames = originalTypeInfo.getAllStructFieldNames();
     fieldInfos = originalTypeInfo.getAllStructFieldTypeInfos();
@@ -134,8 +145,14 @@ public class ArrayWritableObjectInspector extends SettableStructObjectInspector 
     }else if (typeInfo.equals(TypeInfoFactory.dateTypeInfo)) {
       return PrimitiveObjectInspectorFactory.writableDateObjectInspector;
     } else if (typeInfo.getTypeName().toLowerCase().startsWith(serdeConstants.CHAR_TYPE_NAME)) {
+      if (allStrings) {
+        return ParquetPrimitiveInspectorFactory.parquetStringInspector;
+      }
       return PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector((CharTypeInfo) typeInfo);
     } else if (typeInfo.getTypeName().toLowerCase().startsWith(serdeConstants.VARCHAR_TYPE_NAME)) {
+      if (allStrings) {
+        return ParquetPrimitiveInspectorFactory.parquetStringInspector;
+      }
       return PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector((VarcharTypeInfo) typeInfo);
     } else {
       throw new UnsupportedOperationException("Unknown field type: " + typeInfo);
