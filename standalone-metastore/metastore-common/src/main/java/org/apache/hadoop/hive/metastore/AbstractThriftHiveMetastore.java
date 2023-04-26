@@ -28,11 +28,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This abstract class can be extended by any remote cache that implements HMS APIs.
- * The idea behind introducing this abstract class is not to break the build of remote cache,
+ * This class can be extended by any remote cache that implements HMS APIs.
+ * The idea behind introducing this class is not to break the build of remote cache,
  * whenever we add new HMS APIs.
  */
-public abstract class AbstractThriftHiveMetastore implements Iface {
+public class AbstractThriftHiveMetastore implements Iface {
+
+    @Override
+    public AbortCompactResponse abort_Compactions(AbortCompactionRequest rqst) throws TException {
+        throw new UnsupportedOperationException("this method is not supported");
+    }
 
     @Override
     public String getMetaConf(String key) throws MetaException, TException {
@@ -94,6 +99,11 @@ public abstract class AbstractThriftHiveMetastore implements Iface {
     public void drop_database(String name, boolean deleteData, boolean cascade)
             throws NoSuchObjectException, InvalidOperationException, MetaException, TException {
         throw new UnsupportedOperationException("this method is not supported");
+    }
+
+    @Override
+    public void drop_database_req(DropDatabaseRequest req) throws NoSuchObjectException, InvalidOperationException, MetaException, TException {
+
     }
 
     @Override
@@ -266,6 +276,11 @@ public abstract class AbstractThriftHiveMetastore implements Iface {
     @Override
     public void add_check_constraint(AddCheckConstraintRequest req)
             throws NoSuchObjectException, MetaException, TException {
+        throw new UnsupportedOperationException("this method is not supported");
+    }
+
+    @Override
+    public Table translate_table_dryrun(CreateTableRequest request) throws AlreadyExistsException, InvalidObjectException, MetaException, NoSuchObjectException, TException {
         throw new UnsupportedOperationException("this method is not supported");
     }
 
@@ -785,6 +800,11 @@ public abstract class AbstractThriftHiveMetastore implements Iface {
     }
 
     @Override
+    public void update_transaction_statistics(UpdateTransactionalStatsRequest req) throws MetaException, TException {
+        throw new UnsupportedOperationException("this method is not supported");
+    }
+
+    @Override
     public ColumnStatistics get_table_column_statistics(String db_name, String tbl_name, String col_name)
             throws NoSuchObjectException, MetaException, InvalidInputException, InvalidObjectException, TException {
         throw new UnsupportedOperationException("this method is not supported");
@@ -1063,6 +1083,11 @@ public abstract class AbstractThriftHiveMetastore implements Iface {
     }
 
     @Override
+    public void add_write_ids_to_min_history(long txnId, Map<String, Long> writeIds) throws MetaException, TException {
+        throw new UnsupportedOperationException("this method is not supported");
+    }
+
+    @Override
     public AllocateTableWriteIdsResponse allocate_table_write_ids(AllocateTableWriteIdsRequest rqst)
             throws NoSuchTxnException, TxnAbortedException, MetaException, TException {
         throw new UnsupportedOperationException("this method is not supported");
@@ -1132,6 +1157,11 @@ public abstract class AbstractThriftHiveMetastore implements Iface {
     }
 
     @Override
+    public boolean submit_for_cleanup(CompactionRequest o1, long o2, long o3) throws MetaException, TException {
+        throw new UnsupportedOperationException("this method is not supported");
+    }
+
+    @Override
     public void add_dynamic_partitions(AddDynamicPartitions rqst)
             throws NoSuchTxnException, TxnAbortedException, TException {
         throw new UnsupportedOperationException("this method is not supported");
@@ -1175,6 +1205,21 @@ public abstract class AbstractThriftHiveMetastore implements Iface {
     }
 
     @Override
+    public void mark_refused(CompactionInfoStruct cr) throws MetaException, TException {
+        throw new UnsupportedOperationException("this method is not supported");
+    }
+
+    @Override
+    public boolean update_compaction_metrics_data(CompactionMetricsDataStruct data) throws MetaException, TException {
+        throw new UnsupportedOperationException("this method is not supported");
+    }
+
+    @Override
+    public void remove_compaction_metrics_data(CompactionMetricsDataRequest request) throws MetaException, TException {
+        throw new UnsupportedOperationException("this method is not supported");
+    }
+
+    @Override
     public void set_hadoop_jobid(String jobId, long cq_id) throws TException {
         throw new UnsupportedOperationException("this method is not supported");
     }
@@ -1214,6 +1259,11 @@ public abstract class AbstractThriftHiveMetastore implements Iface {
     @Override
     public WriteNotificationLogResponse add_write_notification_log(WriteNotificationLogRequest rqst)
             throws TException {
+        throw new UnsupportedOperationException("this method is not supported");
+    }
+
+    @Override
+    public WriteNotificationLogBatchResponse add_write_notification_log_in_batch(WriteNotificationLogBatchRequest rqst) throws TException {
         throw new UnsupportedOperationException("this method is not supported");
     }
 
